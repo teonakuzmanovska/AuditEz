@@ -11,4 +11,6 @@ public class AuditLog : BaseAuditLog
     public string? OldPropertyValue { get; set; }
     
     public string? NewPropertyValue { get; set; }
+
+    public AuditLog() : base() { }
 }
