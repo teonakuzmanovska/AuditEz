@@ -8,7 +8,7 @@ public class BaseAuditLog
 
     public required string UserId { get; set; }
     
-    public required ActionType Action { get; set; }
+    public required ActionType ActionType { get; set; }
     
     public required string ProcessName { get; set; }
     
