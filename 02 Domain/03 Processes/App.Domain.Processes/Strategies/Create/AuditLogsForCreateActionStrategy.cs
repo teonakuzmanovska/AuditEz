@@ -59,13 +59,14 @@ public class AuditLogsForCreateActionStrategy : IAuditLogsStrategy
 
                 result.Add(new AuditLog
                 {
-                    EntityId = baseAuditLog.EntityId,
-                    EntityType = baseAuditLog.EntityType,
-                    PropertyName = propertyInfo.Name,
-                    NewPropertyValue = currentValueToString,
+                    UserId = baseAuditLog.UserId,
                     ActionType = baseAuditLog.ActionType,
                     ProcessName = baseAuditLog.ProcessName,
-                    UserId = baseAuditLog.UserId
+                    EntityId = baseAuditLog.EntityId,
+                    EntityType = baseAuditLog.EntityType,
+                    
+                    PropertyName = propertyInfo.Name,
+                    NewPropertyValue = currentValueToString
                 });
             }
             
@@ -82,19 +83,19 @@ public class AuditLogsForCreateActionStrategy : IAuditLogsStrategy
         return result;
     }
 
-    private List<AuditLog> GenerateAuditLogsForListCreate(BaseAuditLog baseAuditLog, List<object> newListProperty)
+    private List<AuditLog> GenerateAuditLogsForListCreate(BaseAuditLog baseAuditLog, List<object> listProperty)
     {
         var result = new List<AuditLog>();
         
-        if (!newListProperty.Any()) return result;
+        if (!listProperty.Any()) return result;
         
-        var listType = newListProperty[0].GetType();
+        var listType = listProperty[0].GetType();
 
-        foreach (var property in newListProperty)
+        foreach (var elementFromListProperty in listProperty)
         {
             foreach (var propertyInfo in listType.GetProperties())
             {
-                var currentValue = listType.GetProperty(propertyInfo.Name)?.GetValue(property);
+                var currentValue = listType.GetProperty(propertyInfo.Name)?.GetValue(elementFromListProperty);
                 
                 if (currentValue is null) continue;
                 

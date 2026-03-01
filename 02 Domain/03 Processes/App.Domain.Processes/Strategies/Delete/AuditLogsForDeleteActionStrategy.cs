@@ -1,4 +1,6 @@
-﻿using App.Domain.Entities.Audit.Base;
+﻿using System.Collections;
+using App.Common.Extensions;
+using App.Domain.Entities.Audit.Base;
 using App.Domain.Entities.Audit.Input;
 using App.Domain.Entities.Audit.Output;
 using App.Domain.Entities.Enum;
@@ -27,5 +29,119 @@ public class AuditLogsForDeleteActionStrategy : IAuditLogsStrategy
         {
             throw new InvalidAuditRequestException("Invalid request for Delete action.");
         }
+    }
+
+    private List<AuditLog> GenerateAuditLogsForDelete(BaseAuditLog baseAuditLog, object deletedEntity)
+    {
+        var result = new List<AuditLog>();
+        
+        var entityType = deletedEntity.GetType();
+        
+        foreach (var propertyInfo in entityType.GetProperties())
+        {
+            var currentValue = entityType.GetProperty(propertyInfo.Name)?.GetValue(deletedEntity);
+            
+            if(currentValue is null) continue;
+
+            if (propertyInfo.IsPropertyList())
+            {
+                var list = currentValue as IList;
+
+                if (list is null || list.Count == 0) continue;
+                
+                var listItems = list.Cast<object>().ToList();
+                
+                var auditLogsForListProperty = GenerateAuditLogsForListDelete(baseAuditLog, listItems).ToList();
+                result.AddRange(auditLogsForListProperty);
+            }
+            
+            else if (propertyInfo.IsPropertyPrimitiveType())
+            {
+                var currentValueToString = currentValue.TranslateObjectValueToString();
+
+                result.Add(new AuditLog
+                {
+                    UserId = baseAuditLog.UserId,
+                    ActionType = baseAuditLog.ActionType,
+                    ProcessName = baseAuditLog.ProcessName,
+                    EntityId = baseAuditLog.EntityId,
+                    EntityType = baseAuditLog.EntityType,
+                    
+                    PropertyName = propertyInfo.Name,
+                    OldPropertyValue = currentValueToString
+                });
+            }
+
+            else
+            {
+                var auditLogsForProperty = GenerateAuditLogsForDelete(baseAuditLog, currentValue).ToList();
+                
+                if (!auditLogsForProperty.Any()) continue;
+
+                result.AddRange(auditLogsForProperty);
+
+            }
+        }
+        
+        return result;
+    }
+
+    private List<AuditLog> GenerateAuditLogsForListDelete(BaseAuditLog baseAuditLog, List<object> listProperty)
+    {
+        var result = new List<AuditLog>();
+        
+        if (!listProperty.Any()) return result;
+
+        var listType = listProperty[0].GetType();
+        
+        foreach (var elementFromListProperty in listProperty)
+        {
+            foreach (var propertyInfo in listType.GetProperties())
+            {
+                var currentValue = listType.GetProperty(propertyInfo.Name)?.GetValue(elementFromListProperty);
+
+                if(currentValue is null) continue;
+
+                if (propertyInfo.IsPropertyList())
+                {
+                    var list = currentValue as IList;
+
+                    if (list is null || list.Count == 0) continue;
+                
+                    var listItems = list.Cast<object>().ToList();
+                
+                    var auditLogsForListProperty = GenerateAuditLogsForListDelete(baseAuditLog, listItems).ToList();
+                    result.AddRange(auditLogsForListProperty);
+                }
+
+                else if (propertyInfo.IsPropertyPrimitiveType())
+                {
+                    var currentValueToString = currentValue.TranslateObjectValueToString();
+
+                    result.Add(new AuditLog
+                    {
+                        UserId = baseAuditLog.UserId,
+                        ActionType = baseAuditLog.ActionType,
+                        ProcessName = baseAuditLog.ProcessName,
+                        EntityId = baseAuditLog.EntityId,
+                        EntityType = baseAuditLog.EntityType,
+                    
+                        PropertyName = propertyInfo.Name,
+                        OldPropertyValue = currentValueToString
+                    });
+                }
+
+                else
+                {
+                    var auditLogsForProperty = GenerateAuditLogsForDelete(baseAuditLog, currentValue).ToList();
+                
+                    if (!auditLogsForProperty.Any()) continue;
+
+                    result.AddRange(auditLogsForProperty);
+                }
+            }
+        }
+
+        return result;
     }
 }

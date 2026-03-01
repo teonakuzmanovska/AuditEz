@@ -8,12 +8,21 @@ public static class ObjectExtensions
     {
         var result = value switch
         {
-            // Handle IEnumerable (excluding string and byte)
-            IEnumerable enumerable when value is not string and not byte[] =>
-                string.Join(",", enumerable.Cast<object>().Select(item => item?.ToString())),
-
-            // Handle everything else
-            _ => value?.ToString() ?? string.Empty
+            null => string.Empty,
+            
+            string str => str,
+            
+            _ when value.GetType().IsPrimitive ||
+                   value.GetType().IsValueType =>
+                value.ToString() ?? string.Empty,
+            
+            IList list when value.GetType().IsGenericType &&
+                            value.GetType().GetGenericTypeDefinition() == typeof(List<>) =>
+                list.Count == 0
+                    ? string.Empty
+                    : string.Join(",", list.Cast<object>().Select(x => x?.ToString() ?? string.Empty)),
+            
+            _ => string.Empty
         };
 
         return result;
