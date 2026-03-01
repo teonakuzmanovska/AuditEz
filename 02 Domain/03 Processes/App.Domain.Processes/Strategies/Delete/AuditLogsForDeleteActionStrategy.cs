@@ -16,9 +16,7 @@ public class AuditLogsForDeleteActionStrategy : IAuditLogsStrategy
     {
         ValidateRequest(request);
         
-        // TODO: implement audit log generation methods
-        
-        return new List<AuditLog>();
+        return GenerateAuditLogsForDelete(baseAuditLog, request.NewEntity!);
     }
     
     private void ValidateRequest<T>(AuditLogRequest<T> request) where T : class
@@ -31,7 +29,7 @@ public class AuditLogsForDeleteActionStrategy : IAuditLogsStrategy
         }
     }
 
-    private List<AuditLog> GenerateAuditLogsForDelete(BaseAuditLog baseAuditLog, object deletedEntity)
+    private static List<AuditLog> GenerateAuditLogsForDelete(BaseAuditLog baseAuditLog, object deletedEntity)
     {
         var result = new List<AuditLog>();
         
@@ -86,7 +84,7 @@ public class AuditLogsForDeleteActionStrategy : IAuditLogsStrategy
         return result;
     }
 
-    private List<AuditLog> GenerateAuditLogsForListDelete(BaseAuditLog baseAuditLog, List<object> listProperty)
+    public static List<AuditLog> GenerateAuditLogsForListDelete(BaseAuditLog baseAuditLog, List<object> listProperty)
     {
         var result = new List<AuditLog>();
         
