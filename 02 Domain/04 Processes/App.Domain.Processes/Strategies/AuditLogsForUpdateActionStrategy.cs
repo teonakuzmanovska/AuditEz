@@ -5,9 +5,8 @@ using App.Domain.Entities.Audit.Input;
 using App.Domain.Entities.Audit.Output;
 using App.Domain.Entities.Enum;
 using App.Domain.Processes.Exceptions;
-using App.Domain.Processes.Strategies.Delete;
 
-namespace App.Domain.Processes.Strategies.Update;
+namespace App.Domain.Processes.Strategies;
 
 public class AuditLogsForUpdateActionStrategy : IAuditLogsStrategy
 {
@@ -22,10 +21,9 @@ public class AuditLogsForUpdateActionStrategy : IAuditLogsStrategy
     
     private void ValidateRequest<T>(AuditLogRequest<T> request) where T : class
     {
-        var atLeastOneEntityIsNotNull = request.NewEntity is not null || request.OldEntity is not null;
-        var isUpdateRequestValid = request.Context.Action is ActionType.Update && atLeastOneEntityIsNotNull && (request.OldEntity?.Id is not null || request.NewEntity?.Id is not null);
+        var validUpdateRequestCondition = request.ActionInfo.Action is ActionType.Update && (request.NewEntity is null || request.OldEntity is null);
         
-        if (isUpdateRequestValid)
+        if (validUpdateRequestCondition)
         {
             throw new InvalidAuditRequestException("Invalid request for Update action.");
         }

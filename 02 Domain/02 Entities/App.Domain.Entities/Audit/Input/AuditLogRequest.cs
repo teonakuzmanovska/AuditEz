@@ -1,19 +1,23 @@
-﻿namespace App.Domain.Entities.Audit.Input;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace App.Domain.Entities.Audit.Input;
 
 public class AuditLogRequest<T> where T : class
 {
-    public required AuditContext Context { get; set; }
+    public required ActionInfo ActionInfo { get; set; }
     
-    public EntityToLog<T>? OldEntity { get; set; }
+    public string EntityId { get; set; }
     
-    public EntityToLog<T>? NewEntity { get; set; }
-
-    public AuditLogRequest() { }
-
-    public AuditLogRequest(AuditContext context, EntityToLog<T>? oldEntity, EntityToLog<T>? newEntity)
+    public T? OldEntity { get; set; }
+    
+    public T? NewEntity { get; set; }
+    
+    [SetsRequiredMembers]
+    public AuditLogRequest(ActionInfo actionInfo, string entityId, T? oldEntityToLog, T? newEntityToLog)
     {
-        Context = context;
-        OldEntity = oldEntity;
-        NewEntity = newEntity;
+        ActionInfo = actionInfo;
+        EntityId = entityId;
+        OldEntity = oldEntityToLog;
+        NewEntity = newEntityToLog;
     }
 }

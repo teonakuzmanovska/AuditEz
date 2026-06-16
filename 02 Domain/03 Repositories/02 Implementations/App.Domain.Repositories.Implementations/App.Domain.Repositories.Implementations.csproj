@@ -7,7 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\01 Entities\App.Domain.Entities\App.Domain.Entities.csproj" />
+    <ProjectReference Include="..\..\..\01 Config\App.Domain.Config\App.Domain.Config.csproj" />
+    <ProjectReference Include="..\..\..\02 Entities\App.Domain.Entities\App.Domain.Entities.csproj" />
     <ProjectReference Include="..\..\01 Interfaces\App.Domain.Repositories.Interfaces\App.Domain.Repositories.Interfaces.csproj" />
   </ItemGroup>
 
