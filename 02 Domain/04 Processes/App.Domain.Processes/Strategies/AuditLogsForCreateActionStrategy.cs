@@ -1,33 +1,31 @@
 ﻿using System.Collections;
 using App.Common.Extensions;
-using App.Domain.Entities.Audit.Base;
 using App.Domain.Entities.Audit.Input;
 using App.Domain.Entities.Audit.Output;
 using App.Domain.Entities.Enum;
-using App.Domain.Processes.Exceptions;
 
 namespace App.Domain.Processes.Strategies;
 
-public class AuditLogsForCreateActionStrategy : IAuditLogsStrategy
+internal class AuditLogsForCreateActionStrategy<T> : AuditLogsForActionStrategy<T,CreateAuditLogRequest<T>> where T : class
 {
-    public ActionType ActionType => ActionType.Create;
-
-    public List<AuditLog> Generate<T>(BaseAuditLog baseAuditLog, AuditLogRequest<T> request)
-        where T : class
+    protected override BaseAuditLog BuildBaseAuditLog(CreateAuditLogRequest<T> request)
     {
-        ValidateRequest(request);
-        
-        return GenerateAuditLogsForCreate(baseAuditLog, request.NewEntity!);
+        return new BaseAuditLog()
+        {
+            UserId = request.UserId,
+            ProcessName = request.ProcessName,
+            OriginatingEntityType = typeof(T).Name,
+            OriginatingEntityId = request.Entity.GetEntityIdentifier()
+        };
     }
 
-    private void ValidateRequest<T>(AuditLogRequest<T> request) where T : class
+    internal override List<AuditLog> Generate(CreateAuditLogRequest<T> request)
     {
-        var invalidCreateRequest = request.ActionInfo.Action is ActionType.Create && request.NewEntity is null;
+        base.Validate(request);
         
-        if (invalidCreateRequest)
-        {
-            throw new InvalidAuditRequestException("Invalid request for Create action.");
-        }
+        var baseAuditLog = BuildBaseAuditLog(request);
+        
+        return GenerateAuditLogsForCreate(baseAuditLog, request.Entity);
     }
     
     private List<AuditLog> GenerateAuditLogsForCreate(BaseAuditLog baseAuditLog, object newEntity)
@@ -59,11 +57,15 @@ public class AuditLogsForCreateActionStrategy : IAuditLogsStrategy
 
                 result.Add(new AuditLog
                 {
+                    OriginatingEntityId = baseAuditLog.OriginatingEntityId,
+                    EntityId = newEntity.GetEntityIdentifier(),
+                    
                     UserId = baseAuditLog.UserId,
-                    ActionType = baseAuditLog.ActionType,
+                    ActionType = ActionType.Create,
                     ProcessName = baseAuditLog.ProcessName,
-                    EntityId = baseAuditLog.EntityId,
-                    EntityType = baseAuditLog.EntityType,
+                    
+                    OriginatingEntityType = baseAuditLog.OriginatingEntityType,
+                    EntityType = newEntity.GetType().Name,
                     
                     PropertyName = propertyInfo.Name,
                     NewPropertyValue = currentValueToString
@@ -117,13 +119,18 @@ public class AuditLogsForCreateActionStrategy : IAuditLogsStrategy
 
                     result.Add(new AuditLog
                     {
-                        EntityId = baseAuditLog.EntityId,
-                        EntityType = baseAuditLog.EntityType,
+                        OriginatingEntityId = baseAuditLog.OriginatingEntityId,
+                        EntityId = elementFromListProperty.GetEntityIdentifier(),
+                        
+                        OriginatingEntityType = baseAuditLog.OriginatingEntityType,
+                        EntityType = elementFromListProperty.GetType().Name,
+                        
+                        ActionType = ActionType.Create,
+                        ProcessName = baseAuditLog.ProcessName,
+                        UserId = baseAuditLog.UserId,
+                        
                         PropertyName = propertyInfo.Name,
                         NewPropertyValue = currentValueToString,
-                        ActionType = baseAuditLog.ActionType,
-                        ProcessName = baseAuditLog.ProcessName,
-                        UserId = baseAuditLog.UserId
                     });
                 }
                 

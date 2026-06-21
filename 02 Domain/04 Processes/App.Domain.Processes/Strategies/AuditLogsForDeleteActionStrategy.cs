@@ -1,32 +1,31 @@
 ﻿using System.Collections;
 using App.Common.Extensions;
-using App.Domain.Entities.Audit.Base;
 using App.Domain.Entities.Audit.Input;
 using App.Domain.Entities.Audit.Output;
 using App.Domain.Entities.Enum;
-using App.Domain.Processes.Exceptions;
 
 namespace App.Domain.Processes.Strategies;
 
-public class AuditLogsForDeleteActionStrategy : IAuditLogsStrategy
+internal class AuditLogsForDeleteActionStrategy<T> : AuditLogsForActionStrategy<T,DeleteAuditLogRequest<T>> where T : class
 {
-    public ActionType ActionType => ActionType.Delete;
-    
-    public List<AuditLog> Generate<T>(BaseAuditLog baseAuditLog, AuditLogRequest<T> request) where T : class
+    protected override BaseAuditLog BuildBaseAuditLog(DeleteAuditLogRequest<T> request)
     {
-        ValidateRequest(request);
-        
-        return GenerateAuditLogsForDelete(baseAuditLog, request.OldEntity!);
-    }
-    
-    private void ValidateRequest<T>(AuditLogRequest<T> request) where T : class
-    {
-        var invalidDeleteRequestCondition = request.ActionInfo.Action is ActionType.Delete && request.OldEntity is null;
-
-        if (invalidDeleteRequestCondition)
+        return new BaseAuditLog()
         {
-            throw new InvalidAuditRequestException("Invalid request for Delete action.");
-        }
+            UserId = request.UserId,
+            ProcessName = request.ProcessName,
+            OriginatingEntityType = nameof(T),
+            OriginatingEntityId = request.Entity.GetEntityIdentifier()
+        };
+    }
+
+    internal override List<AuditLog> Generate(DeleteAuditLogRequest<T> request)
+    {
+        base.Validate(request);
+        
+        var baseAuditLog = BuildBaseAuditLog(request);
+        
+        return GenerateAuditLogsForDelete(baseAuditLog, request.Entity);
     }
 
     private static List<AuditLog> GenerateAuditLogsForDelete(BaseAuditLog baseAuditLog, object deletedEntity)
@@ -59,11 +58,15 @@ public class AuditLogsForDeleteActionStrategy : IAuditLogsStrategy
 
                 result.Add(new AuditLog
                 {
+                    OriginatingEntityId = baseAuditLog.OriginatingEntityId,
+                    EntityId = deletedEntity.GetEntityIdentifier(),
+
                     UserId = baseAuditLog.UserId,
-                    ActionType = baseAuditLog.ActionType,
+                    ActionType = ActionType.Delete,
                     ProcessName = baseAuditLog.ProcessName,
-                    EntityId = baseAuditLog.EntityId,
-                    EntityType = baseAuditLog.EntityType,
+                    
+                    OriginatingEntityType = baseAuditLog.OriginatingEntityType,
+                    EntityType = deletedEntity.GetType().Name,
                     
                     PropertyName = propertyInfo.Name,
                     OldPropertyValue = currentValueToString
@@ -118,12 +121,16 @@ public class AuditLogsForDeleteActionStrategy : IAuditLogsStrategy
 
                     result.Add(new AuditLog
                     {
+                        OriginatingEntityId = baseAuditLog.OriginatingEntityId,
+                        EntityId = elementFromListProperty.GetEntityIdentifier(),
+                        
                         UserId = baseAuditLog.UserId,
-                        ActionType = baseAuditLog.ActionType,
+                        ActionType = ActionType.Delete,
                         ProcessName = baseAuditLog.ProcessName,
-                        EntityId = baseAuditLog.EntityId,
-                        EntityType = baseAuditLog.EntityType,
-                    
+                        
+                        OriginatingEntityType = baseAuditLog.OriginatingEntityType,
+                        EntityType = elementFromListProperty.GetType().Name,
+                        
                         PropertyName = propertyInfo.Name,
                         OldPropertyValue = currentValueToString
                     });

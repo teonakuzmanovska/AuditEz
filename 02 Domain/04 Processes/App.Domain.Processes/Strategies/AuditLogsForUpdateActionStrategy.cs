@@ -1,32 +1,31 @@
 ﻿using System.Collections;
 using App.Common.Extensions;
-using App.Domain.Entities.Audit.Base;
 using App.Domain.Entities.Audit.Input;
 using App.Domain.Entities.Audit.Output;
 using App.Domain.Entities.Enum;
-using App.Domain.Processes.Exceptions;
 
 namespace App.Domain.Processes.Strategies;
 
-public class AuditLogsForUpdateActionStrategy : IAuditLogsStrategy
+internal class AuditLogsForUpdateActionStrategy<T> : AuditLogsForActionStrategy<T,UpdateAuditLogRequest<T>> where T : class
 {
-    public ActionType ActionType => ActionType.Update;
-    
-    public List<AuditLog> Generate<T>(BaseAuditLog baseAuditLog, AuditLogRequest<T> request) where T : class
+    protected override BaseAuditLog BuildBaseAuditLog(UpdateAuditLogRequest<T> request)
     {
-        ValidateRequest(request);
-        
-        return GenerateAuditLogsForUpdate(baseAuditLog, request.OldEntity, request.NewEntity);
-    }
-    
-    private void ValidateRequest<T>(AuditLogRequest<T> request) where T : class
-    {
-        var validUpdateRequestCondition = request.ActionInfo.Action is ActionType.Update && (request.NewEntity is null || request.OldEntity is null);
-        
-        if (validUpdateRequestCondition)
+        return new BaseAuditLog()
         {
-            throw new InvalidAuditRequestException("Invalid request for Update action.");
-        }
+            UserId = request.UserId,
+            ProcessName = request.ProcessName,
+            OriginatingEntityType = nameof(T),
+            OriginatingEntityId = request.NewEntity.GetEntityIdentifier()
+        };
+    }
+
+    internal override List<AuditLog> Generate(UpdateAuditLogRequest<T> request)
+    {
+        base.Validate(request);
+        
+        var baseAuditLog = BuildBaseAuditLog(request);
+        
+        return GenerateAuditLogsForUpdate(baseAuditLog, request.NewEntity, request.NewEntity);
     }
 
     private List<AuditLog> GenerateAuditLogsForUpdate(BaseAuditLog baseAuditLog, object? existingEntity, object? updatedEntity)
@@ -63,12 +62,16 @@ public class AuditLogsForUpdateActionStrategy : IAuditLogsStrategy
                 {
                     result.Add(new AuditLog()
                     {
+                        OriginatingEntityId = baseAuditLog.OriginatingEntityId,
+                        EntityId = existingEntity?.GetEntityIdentifier() ?? updatedEntity!.GetEntityIdentifier(),
+                        
                         UserId = baseAuditLog.UserId,
-                        ActionType = baseAuditLog.ActionType,
+                        ActionType = ActionType.Update,
                         ProcessName = baseAuditLog.ProcessName,
-                        EntityId = baseAuditLog.EntityId,
-                        EntityType = baseAuditLog.EntityType,
-                    
+                        
+                        OriginatingEntityType = baseAuditLog.OriginatingEntityType,
+                        EntityType = nameof(entityType),
+                        
                         PropertyName = propertyInfo.Name,
                         OldPropertyValue = originalValueToString,
                         NewPropertyValue = currentValueToString,
@@ -98,7 +101,7 @@ public class AuditLogsForUpdateActionStrategy : IAuditLogsStrategy
         
         if (updatedListProperty.IsNullOrHasZeroElements() && existingListProperty!.Count > 0)
         {
-            return AuditLogsForDeleteActionStrategy.GenerateAuditLogsForListDelete(baseAuditLog, existingListProperty);
+            return AuditLogsForDeleteActionStrategy<T>.GenerateAuditLogsForListDelete(baseAuditLog, existingListProperty);
         }
 
         var propertyListType = updatedListProperty?[0].GetType() ?? existingListProperty![0].GetType();
@@ -135,11 +138,15 @@ public class AuditLogsForUpdateActionStrategy : IAuditLogsStrategy
                     {
                         result.Add(new AuditLog()
                         {
+                            OriginatingEntityId = baseAuditLog.OriginatingEntityId,
+                            EntityId = updatedListProperty?.GetEntityIdentifier() ?? existingListProperty!.GetEntityIdentifier(),
+
                             UserId = baseAuditLog.UserId,
-                            ActionType = baseAuditLog.ActionType,
+                            ActionType = ActionType.Update,
                             ProcessName = baseAuditLog.ProcessName,
-                            EntityId = baseAuditLog.EntityId,
-                            EntityType = baseAuditLog.EntityType,
+                            
+                            OriginatingEntityType = baseAuditLog.OriginatingEntityType,
+                            EntityType = propertyListType.ToString(),
                     
                             PropertyName = propertyInfo.Name,
                             OldPropertyValue = originalValueToString,
@@ -164,7 +171,7 @@ public class AuditLogsForUpdateActionStrategy : IAuditLogsStrategy
 
         if (!unLoggedItemsFromOriginalList.IsNullOrHasZeroElements())
         {
-            result.AddRange(AuditLogsForDeleteActionStrategy.GenerateAuditLogsForListDelete(baseAuditLog, unLoggedItemsFromOriginalList));
+            result.AddRange(AuditLogsForDeleteActionStrategy<T>.GenerateAuditLogsForListDelete(baseAuditLog, unLoggedItemsFromOriginalList));
         }
 
         return result;
