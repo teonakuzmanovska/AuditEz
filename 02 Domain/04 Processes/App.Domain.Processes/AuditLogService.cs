@@ -1,53 +1,25 @@
-﻿using App.Domain.Entities.Audit.Base;
-using App.Domain.Entities.Audit.Input;
+﻿using App.Domain.Entities.Audit.Input;
 using App.Domain.Entities.Audit.Output;
-using App.Domain.Entities.Enum;
 using App.Domain.Processes.Exceptions;
 using App.Domain.Processes.Strategies;
 
 namespace App.Domain.Processes;
 
-public class AuditLogService<T> where T : class
+public static class AuditLogService
 {
-    private Dictionary<ActionType, IAuditLogsStrategy> _strategies => new()
-        {
-            { ActionType.Create, new AuditLogsForCreateActionStrategy() },
-            { ActionType.Update, new AuditLogsForUpdateActionStrategy() },
-            { ActionType.Delete, new AuditLogsForDeleteActionStrategy() },
-        };
-    
-    public List<AuditLog> GenerateAuditLogs(AuditLogRequest<T> request)
+    public static List<AuditLog> GenerateAuditLogs<T>(BaseAuditLogRequest<T> request) where T : class
     {
-        if (request is null)
+        var auditLogs = request switch
         {
-            throw new ArgumentNullException(nameof(request));
-        }
-        
-        if (request.ActionInfo.Action is ActionType.Unknown)
-        {
-            throw new InvalidAuditRequestException("Action is a required field.");
-        }
-        
-        var baseAuditLog = BuildBaseAuditLog(request);
-        var strategy = _strategies[request.ActionInfo.Action];
-        
-        return strategy.Generate(baseAuditLog, request);
-    }
+            CreateAuditLogRequest<T> createRequest => new AuditLogsForCreateActionStrategy<T>().Generate(createRequest),
 
-    private BaseAuditLog BuildBaseAuditLog(AuditLogRequest<T> request)
-    {
-        if (request.EntityId is null)
-        {
-            throw new InvalidAuditRequestException("Entity Id must be provided for auditing.");
-        }
+            UpdateAuditLogRequest<T> updateRequest => new AuditLogsForUpdateActionStrategy<T>().Generate(updateRequest),
 
-        return new BaseAuditLog()
-        {
-            UserId = request.ActionInfo.UserId,
-            ActionType = request.ActionInfo.Action,
-            ProcessName = request.ActionInfo.ProcessName,
-            EntityType = typeof(T).Name,
-            EntityId = request.EntityId
+            DeleteAuditLogRequest<T> deleteRequest => new AuditLogsForDeleteActionStrategy<T>().Generate(deleteRequest),
+
+            _ => throw new InvalidAuditRequestException("Unsupported request.")
         };
+        
+        return auditLogs;
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using App.Domain.Entities.Attributes;
 
 namespace App.Common.Extensions;
 
@@ -26,5 +27,17 @@ public static class ObjectExtensions
         };
 
         return result;
+    }
+    
+    public static string GetEntityIdentifier(this object entity)
+    {
+        var identifierProperty = entity.GetType()
+            .GetProperties()
+            .Single(p =>
+                Attribute.IsDefined(
+                    p,
+                    typeof(EntityIdentifierAttribute)));
+
+        return identifierProperty.GetValue(entity)!.ToString()!;
     }
 }
