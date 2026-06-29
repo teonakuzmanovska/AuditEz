@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using App.Common.Extensions;
+using App.Domain.Entities.Attributes;
 using App.Domain.Entities.Audit.Input;
 using App.Domain.Entities.Audit.Output;
 using App.Domain.Entities.Enum;
@@ -14,7 +15,7 @@ internal class AuditLogsForDeleteActionStrategy<T> : AuditLogsForActionStrategy<
         {
             UserId = request.UserId,
             ProcessName = request.ProcessName,
-            OriginatingEntityType = nameof(T),
+            OriginatingEntityType = typeof(T).Name,
             OriginatingEntityId = request.Entity.GetEntityIdentifier()
         };
     }
@@ -36,6 +37,11 @@ internal class AuditLogsForDeleteActionStrategy<T> : AuditLogsForActionStrategy<
         
         foreach (var propertyInfo in entityType.GetProperties())
         {
+            if (propertyInfo.IsDefined(typeof(AuditIgnoreAttribute), inherit: true))
+            {
+                continue;
+            }
+            
             var currentValue = entityType.GetProperty(propertyInfo.Name)?.GetValue(deletedEntity);
             
             if(currentValue is null) continue;
@@ -47,9 +53,30 @@ internal class AuditLogsForDeleteActionStrategy<T> : AuditLogsForActionStrategy<
                 if (list is null || list.Count == 0) continue;
                 
                 var listItems = list.Cast<object>().ToList();
-                
-                var auditLogsForListProperty = GenerateAuditLogsForListDelete(baseAuditLog, listItems).ToList();
-                result.AddRange(auditLogsForListProperty);
+
+                if (listItems[0].GetType().IsPrimitive)
+                {
+                    result.Add(new AuditLog
+                    {
+                        OriginatingEntityId = baseAuditLog.OriginatingEntityId,
+                        EntityId = deletedEntity.GetEntityIdentifier(),
+                    
+                        UserId = baseAuditLog.UserId,
+                        ActionType = ActionType.Delete,
+                        ProcessName = baseAuditLog.ProcessName,
+                    
+                        OriginatingEntityType = baseAuditLog.OriginatingEntityType,
+                        EntityType = entityType.Name,
+                    
+                        PropertyName = propertyInfo.Name,
+                        OldPropertyValue = list.TranslateObjectValueToString()
+                    });
+                }
+                else
+                {
+                    var auditLogsForListProperty = GenerateAuditLogsForListDelete(baseAuditLog, listItems).ToList();
+                    result.AddRange(auditLogsForListProperty);
+                }
             }
             
             else if (propertyInfo.IsPropertyPrimitiveType())
@@ -66,7 +93,7 @@ internal class AuditLogsForDeleteActionStrategy<T> : AuditLogsForActionStrategy<
                     ProcessName = baseAuditLog.ProcessName,
                     
                     OriginatingEntityType = baseAuditLog.OriginatingEntityType,
-                    EntityType = deletedEntity.GetType().Name,
+                    EntityType = entityType.Name,
                     
                     PropertyName = propertyInfo.Name,
                     OldPropertyValue = currentValueToString
@@ -99,6 +126,11 @@ internal class AuditLogsForDeleteActionStrategy<T> : AuditLogsForActionStrategy<
         {
             foreach (var propertyInfo in listType.GetProperties())
             {
+                if (propertyInfo.IsDefined(typeof(AuditIgnoreAttribute), inherit: true))
+                {
+                    continue;
+                }
+                
                 var currentValue = listType.GetProperty(propertyInfo.Name)?.GetValue(elementFromListProperty);
 
                 if(currentValue is null) continue;
@@ -129,7 +161,7 @@ internal class AuditLogsForDeleteActionStrategy<T> : AuditLogsForActionStrategy<
                         ProcessName = baseAuditLog.ProcessName,
                         
                         OriginatingEntityType = baseAuditLog.OriginatingEntityType,
-                        EntityType = elementFromListProperty.GetType().Name,
+                        EntityType = listType.Name,
                         
                         PropertyName = propertyInfo.Name,
                         OldPropertyValue = currentValueToString

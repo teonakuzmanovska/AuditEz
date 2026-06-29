@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using App.Common.Extensions;
+using App.Domain.Entities.Attributes;
 using App.Domain.Entities.Audit.Input;
 using App.Domain.Entities.Audit.Output;
 using App.Domain.Entities.Enum;
@@ -35,6 +36,11 @@ internal class AuditLogsForCreateActionStrategy<T> : AuditLogsForActionStrategy<
         
         foreach (var propertyInfo in entityType.GetProperties())
         {
+            if (propertyInfo.IsDefined(typeof(AuditIgnoreAttribute), inherit: true))
+            {
+                continue;
+            }
+            
             var currentValue = entityType.GetProperty(propertyInfo.Name)?.GetValue(newEntity);
 
             if(currentValue is null) continue;
@@ -46,9 +52,30 @@ internal class AuditLogsForCreateActionStrategy<T> : AuditLogsForActionStrategy<
                 if (list is null || list.Count == 0) continue;
                 
                 var listItems = list.Cast<object>().ToList();
-                
-                var auditLogsForListProperty = GenerateAuditLogsForListCreate(baseAuditLog, listItems).ToList();
-                result.AddRange(auditLogsForListProperty);
+
+                if (listItems[0].GetType().IsPrimitive)
+                {
+                    result.Add(new AuditLog
+                    {
+                        OriginatingEntityId = baseAuditLog.OriginatingEntityId,
+                        EntityId = newEntity.GetEntityIdentifier(),
+                    
+                        UserId = baseAuditLog.UserId,
+                        ActionType = ActionType.Create,
+                        ProcessName = baseAuditLog.ProcessName,
+                    
+                        OriginatingEntityType = baseAuditLog.OriginatingEntityType,
+                        EntityType = entityType.Name,
+                    
+                        PropertyName = propertyInfo.Name,
+                        NewPropertyValue = list.TranslateObjectValueToString()
+                    });
+                }
+                else
+                {
+                    var auditLogsForListProperty = GenerateAuditLogsForListCreate(baseAuditLog, listItems).ToList();
+                    result.AddRange(auditLogsForListProperty);
+                }
             }
             
             else if (propertyInfo.IsPropertyPrimitiveType())
@@ -65,7 +92,7 @@ internal class AuditLogsForCreateActionStrategy<T> : AuditLogsForActionStrategy<
                     ProcessName = baseAuditLog.ProcessName,
                     
                     OriginatingEntityType = baseAuditLog.OriginatingEntityType,
-                    EntityType = newEntity.GetType().Name,
+                    EntityType = entityType.Name,
                     
                     PropertyName = propertyInfo.Name,
                     NewPropertyValue = currentValueToString
@@ -92,11 +119,16 @@ internal class AuditLogsForCreateActionStrategy<T> : AuditLogsForActionStrategy<
         if (!listProperty.Any()) return result;
         
         var listType = listProperty[0].GetType();
-
+        
         foreach (var elementFromListProperty in listProperty)
         {
             foreach (var propertyInfo in listType.GetProperties())
             {
+                if (propertyInfo.IsDefined(typeof(AuditIgnoreAttribute), inherit: true))
+                {
+                    continue;
+                }
+                
                 var currentValue = listType.GetProperty(propertyInfo.Name)?.GetValue(elementFromListProperty);
                 
                 if (currentValue is null) continue;
@@ -123,7 +155,7 @@ internal class AuditLogsForCreateActionStrategy<T> : AuditLogsForActionStrategy<
                         EntityId = elementFromListProperty.GetEntityIdentifier(),
                         
                         OriginatingEntityType = baseAuditLog.OriginatingEntityType,
-                        EntityType = elementFromListProperty.GetType().Name,
+                        EntityType = listType.Name,
                         
                         ActionType = ActionType.Create,
                         ProcessName = baseAuditLog.ProcessName,

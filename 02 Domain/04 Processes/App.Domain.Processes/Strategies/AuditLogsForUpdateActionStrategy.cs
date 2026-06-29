@@ -14,7 +14,7 @@ internal class AuditLogsForUpdateActionStrategy<T> : AuditLogsForActionStrategy<
         {
             UserId = request.UserId,
             ProcessName = request.ProcessName,
-            OriginatingEntityType = nameof(T),
+            OriginatingEntityType = typeof(T).Name,
             OriginatingEntityId = request.NewEntity.GetEntityIdentifier()
         };
     }
@@ -25,7 +25,7 @@ internal class AuditLogsForUpdateActionStrategy<T> : AuditLogsForActionStrategy<
         
         var baseAuditLog = BuildBaseAuditLog(request);
         
-        return GenerateAuditLogsForUpdate(baseAuditLog, request.NewEntity, request.NewEntity);
+        return GenerateAuditLogsForUpdate(baseAuditLog, request.OldEntity, request.NewEntity);
     }
 
     private List<AuditLog> GenerateAuditLogsForUpdate(BaseAuditLog baseAuditLog, object? existingEntity, object? updatedEntity)
@@ -38,6 +38,11 @@ internal class AuditLogsForUpdateActionStrategy<T> : AuditLogsForActionStrategy<
         
         foreach (var propertyInfo in entityType.GetProperties())
         {
+            if (propertyInfo.ShouldIgnoreProperty())
+            {
+                continue;
+            }
+            
             var currentValue = entityType.GetProperty(propertyInfo.Name)?.GetValue(updatedEntity);
             var originalValue = entityType.GetProperty(propertyInfo.Name)?.GetValue(existingEntity);
 
@@ -47,6 +52,28 @@ internal class AuditLogsForUpdateActionStrategy<T> : AuditLogsForActionStrategy<
                 var existingList = (originalValue as IList)?.Cast<object>().ToList();
                 
                 if (updatedList.IsNullOrHasZeroElements() && existingList.IsNullOrHasZeroElements()) continue;
+                
+                var listType = existingList?[0].GetType() ?? updatedList![0].GetType();
+
+                if (listType.IsPrimitive)
+                {
+                    result.Add(new AuditLog
+                    {
+                        OriginatingEntityId = baseAuditLog.OriginatingEntityId,
+                        EntityId = updatedEntity?.GetEntityIdentifier() ?? existingEntity!.GetEntityIdentifier(),
+                    
+                        UserId = baseAuditLog.UserId,
+                        ActionType = ActionType.Update,
+                        ProcessName = baseAuditLog.ProcessName,
+                    
+                        OriginatingEntityType = baseAuditLog.OriginatingEntityType,
+                        EntityType = entityType.Name,
+                    
+                        PropertyName = propertyInfo.Name,
+                        NewPropertyValue = updatedList.TranslateObjectValueToString(),
+                        OldPropertyValue = existingList.TranslateObjectValueToString()
+                    });
+                }
                 
                 var auditLogsForListProperty = GenerateAuditLogsForListUpdate(baseAuditLog, existingList, updatedList);
                 
@@ -70,7 +97,7 @@ internal class AuditLogsForUpdateActionStrategy<T> : AuditLogsForActionStrategy<
                         ProcessName = baseAuditLog.ProcessName,
                         
                         OriginatingEntityType = baseAuditLog.OriginatingEntityType,
-                        EntityType = nameof(entityType),
+                        EntityType = entityType.Name,
                         
                         PropertyName = propertyInfo.Name,
                         OldPropertyValue = originalValueToString,
@@ -114,6 +141,11 @@ internal class AuditLogsForUpdateActionStrategy<T> : AuditLogsForActionStrategy<
 
             foreach (var propertyInfo in propertyListType.GetProperties())
             {
+                if (propertyInfo.ShouldIgnoreProperty())
+                {
+                    continue;
+                }
+                
                 var currentValue = propertyListType.GetProperty(propertyInfo.Name)?.GetValue(propertyListElement);
                 var originalValue = originalEntity is null ? null : propertyListType.GetProperty(propertyInfo.Name)?.GetValue(originalEntity);
                 
@@ -146,7 +178,7 @@ internal class AuditLogsForUpdateActionStrategy<T> : AuditLogsForActionStrategy<
                             ProcessName = baseAuditLog.ProcessName,
                             
                             OriginatingEntityType = baseAuditLog.OriginatingEntityType,
-                            EntityType = propertyListType.ToString(),
+                            EntityType = propertyListType.Name,
                     
                             PropertyName = propertyInfo.Name,
                             OldPropertyValue = originalValueToString,

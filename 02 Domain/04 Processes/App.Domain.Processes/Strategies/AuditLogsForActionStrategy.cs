@@ -20,7 +20,7 @@ internal abstract class AuditLogsForActionStrategy<T,R> where T : class where R 
         if (identifierProperties.Count != 1)
         {
             throw new InvalidOperationException(
-                $"Exactly one EntityIdentifierAttribute is required for the {nameof(T)} class.");
+                $"Exactly one EntityIdentifierAttribute is required for the {typeof(T).Name} class.");
         }
     }
 

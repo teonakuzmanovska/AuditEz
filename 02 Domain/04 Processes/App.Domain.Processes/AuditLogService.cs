@@ -9,17 +9,25 @@ public static class AuditLogService
 {
     public static List<AuditLog> GenerateAuditLogs<T>(BaseAuditLogRequest<T> request) where T : class
     {
-        var auditLogs = request switch
+        try
         {
-            CreateAuditLogRequest<T> createRequest => new AuditLogsForCreateActionStrategy<T>().Generate(createRequest),
+            var auditLogs = request switch
+            {
+                CreateAuditLogRequest<T> createRequest => new AuditLogsForCreateActionStrategy<T>().Generate(createRequest),
 
-            UpdateAuditLogRequest<T> updateRequest => new AuditLogsForUpdateActionStrategy<T>().Generate(updateRequest),
+                UpdateAuditLogRequest<T> updateRequest => new AuditLogsForUpdateActionStrategy<T>().Generate(updateRequest),
 
-            DeleteAuditLogRequest<T> deleteRequest => new AuditLogsForDeleteActionStrategy<T>().Generate(deleteRequest),
+                DeleteAuditLogRequest<T> deleteRequest => new AuditLogsForDeleteActionStrategy<T>().Generate(deleteRequest),
 
-            _ => throw new InvalidAuditRequestException("Unsupported request.")
-        };
+                _ => throw new InvalidAuditRequestException("Unsupported request.")
+            };
         
-        return auditLogs;
+            return auditLogs;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 }
