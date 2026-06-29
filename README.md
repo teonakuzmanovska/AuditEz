@@ -13,11 +13,10 @@ It supports auditing for create, update and delete operations.
 AuditEz supports objects with properties of the following types:
 - primitive types, 
 - classes, 
-- lists of the above stated types.
+- lists of the above stated types
 
 The developer should provide:
-- id of the object being audited,
-- the object being audited,
+- the object(s) being audited (identifier property should be marked with provided attribute by the library),
 - id of the logged in user,
 - name of the calling process, 
 - type of action (create / update / delete)
@@ -38,6 +37,8 @@ Data stored:
 - Id of the audit log,
 - Id of the entity that was logged,
 - Type of the entity that was logged,
+- Originating Id of the entity that was logged (in case the entity is a nested property),
+- Originating Type of the entity that was logged (in case the entity is a nested property),
 - Properties affected:
   - Name of the property
   - Old value of the property
