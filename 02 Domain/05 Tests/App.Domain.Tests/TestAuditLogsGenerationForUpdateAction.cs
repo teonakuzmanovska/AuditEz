@@ -25,6 +25,7 @@ public class TestAuditLogsGenerationForUpdateAction
         _firstEmployeeRecord = new TestEmployee()
         {
             Id = Guid.NewGuid(),
+            Ssn = "37082eenck2q",
             CreatedOn = DateTime.Now,
             Address = "test",
             Department = Department.Accounting,
@@ -37,6 +38,7 @@ public class TestAuditLogsGenerationForUpdateAction
         _secondEmployeeRecord = new TestEmployee()
         {
             Id = Guid.NewGuid(),
+            Ssn = "nfi328e413",
             CreatedOn = DateTime.Now,
             Address = "test 1",
             Department = Department.Accounting,
@@ -49,6 +51,7 @@ public class TestAuditLogsGenerationForUpdateAction
         _thirdEmployeeRecord = new TestEmployee()
         {
             Id = Guid.NewGuid(),
+            Ssn = "hfdoew783492",
             CreatedOn = DateTime.Now,
             Address = "test 3",
             Department = Department.Marketing,
@@ -61,6 +64,7 @@ public class TestAuditLogsGenerationForUpdateAction
         _firstDepartmentRecord = new TestDepartment()
         {
             Id = Guid.NewGuid(),
+            CreatedOn = DateTime.Now,
             Department = Department.Accounting,
             Employees = [_firstEmployeeRecord, _secondEmployeeRecord, _thirdEmployeeRecord],
             YearsActive = [2021, 2022, 2023]
@@ -69,6 +73,7 @@ public class TestAuditLogsGenerationForUpdateAction
         _secondDepartmentRecord = new TestDepartment()
         {
             Id = Guid.NewGuid(),
+            CreatedOn = DateTime.Now,
             Department = Department.Finance,
             Employees = [_secondEmployeeRecord, _thirdEmployeeRecord],
             YearsActive = [2021, 2022, 2026]
@@ -100,7 +105,7 @@ public class TestAuditLogsGenerationForUpdateAction
         
         var auditLogs = AuditLogService.GenerateAuditLogs(auditLogRequest);
         
-        Assert.That(auditLogs.Count(x => x.EntityId == _firstEmployeeRecord.Id.ToString()), Is.EqualTo(8));
+        Assert.That(auditLogs.Count(x => x.EntityId == _firstEmployeeRecord.Id.ToString()), Is.EqualTo(7));
         Assert.That(auditLogs.Count(x => x.EntityType == nameof(TestDepartment)), Is.EqualTo(2));
     }
 }

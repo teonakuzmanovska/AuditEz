@@ -23,6 +23,7 @@ public class TestAuditLogsGenerationForDeleteAction
         _firstEmployeeRecord = new TestEmployee()
         {
             Id = Guid.NewGuid(),
+            Ssn = "37082eenck2q",
             CreatedOn = DateTime.Now,
             Address = "test",
             Department = Department.Accounting,
@@ -35,6 +36,7 @@ public class TestAuditLogsGenerationForDeleteAction
         _secondEmployeeRecord = new TestEmployee()
         {
             Id = Guid.NewGuid(),
+            Ssn = "nfi328e413",
             CreatedOn = DateTime.Now,
             Address = "test 1",
             Department = Department.Accounting,
@@ -47,6 +49,7 @@ public class TestAuditLogsGenerationForDeleteAction
         _firstDepartmentRecord = new TestDepartment()
         {
             Id = Guid.NewGuid(),
+            CreatedOn = DateTime.Now,
             Department = Department.Accounting,
             Employees = [_firstEmployeeRecord, _secondEmployeeRecord],
             YearsActive = [2021, 2022, 2023]
@@ -63,7 +66,7 @@ public class TestAuditLogsGenerationForDeleteAction
         
         var auditLogs = AuditLogService.GenerateAuditLogs(auditLogRequest);
         
-        Assert.That(auditLogs.Count(x => x.OldPropertyValue is not null && x.NewPropertyValue is null), Is.EqualTo(8) );
+        Assert.That(auditLogs.Count(x => x.OldPropertyValue is not null && x.NewPropertyValue is null), Is.EqualTo(7));
     }
     
     [Test]
@@ -77,6 +80,6 @@ public class TestAuditLogsGenerationForDeleteAction
         var auditLogs = AuditLogService.GenerateAuditLogs(auditLogRequest);
         
         Assert.That(auditLogs.Count(x => x is { EntityType: nameof(TestDepartment), OldPropertyValue: not null, NewPropertyValue: null }), Is.EqualTo(3) );
-        Assert.That(auditLogs.Count(x => x is { EntityType: nameof(TestEmployee), OldPropertyValue: not null, NewPropertyValue: null }), Is.EqualTo(16) );
+        Assert.That(auditLogs.Count(x => x is { EntityType: nameof(TestEmployee), OldPropertyValue: not null, NewPropertyValue: null }), Is.EqualTo(14) );
     }
 }

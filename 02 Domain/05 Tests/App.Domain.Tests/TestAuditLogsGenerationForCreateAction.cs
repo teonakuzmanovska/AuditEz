@@ -24,6 +24,7 @@ public class TestAuditLogsGenerationForCreateAction
         _firstEmployeeRecord = new TestEmployee()
         {
             Id = Guid.NewGuid(),
+            Ssn = "37082eenck2q",
             CreatedOn = DateTime.Now,
             Address = "test",
             Department = Department.Accounting,
@@ -36,6 +37,7 @@ public class TestAuditLogsGenerationForCreateAction
         _secondEmployeeRecord = new TestEmployee()
         {
             Id = Guid.NewGuid(),
+            Ssn = "nfi328e413",
             CreatedOn = DateTime.Now,
             Address = "test 1",
             Department = Department.Accounting,
@@ -48,6 +50,7 @@ public class TestAuditLogsGenerationForCreateAction
         _thirdEmployeeRecord = new TestEmployee()
         {
             Id = Guid.NewGuid(),
+            Ssn = "hfdoew783492",
             CreatedOn = DateTime.Now,
             Address = "test 3",
             Department = Department.Marketing,
@@ -60,6 +63,7 @@ public class TestAuditLogsGenerationForCreateAction
         _firstDepartmentRecord = new TestDepartment()
         {
             Id = Guid.NewGuid(),
+            CreatedOn = DateTime.Now,
             Department = Department.Accounting,
             Employees = [_firstEmployeeRecord, _secondEmployeeRecord, _thirdEmployeeRecord],
             YearsActive = [2021, 2022, 2023]
@@ -76,8 +80,8 @@ public class TestAuditLogsGenerationForCreateAction
         
         var auditLogs = AuditLogService.GenerateAuditLogs(auditLogRequest);
         
-        Assert.That(auditLogs.Count(x => x.OldPropertyValue is null), Is.EqualTo(8) );
-        Assert.That(auditLogs.Count(x => x.NewPropertyValue is not null), Is.EqualTo(8) );
+        Assert.That(auditLogs.Count(x => x.OldPropertyValue is null), Is.EqualTo(7));
+        Assert.That(auditLogs.Count(x => x.NewPropertyValue is not null), Is.EqualTo(7));
     }
     
     [Test]
@@ -90,6 +94,6 @@ public class TestAuditLogsGenerationForCreateAction
         
         var auditLogs = AuditLogService.GenerateAuditLogs(auditLogRequest);
         
-        Assert.That(auditLogs.Count, Is.EqualTo(27));
+        Assert.That(auditLogs.Count, Is.EqualTo(24));
     }
 }

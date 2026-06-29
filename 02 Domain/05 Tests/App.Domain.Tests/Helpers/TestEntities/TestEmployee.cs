@@ -5,8 +5,12 @@ namespace App.Domain.Tests.Helpers.TestEntities;
 public class TestEmployee
 {
     [EntityIdentifier]
-    public required Guid Id { get; set; }
+    public required Guid Id { get; init; }
     
+    [AuditIgnore]
+    public required string Ssn { get; init; }
+    
+    [AuditIgnore]
     public required  DateTime CreatedOn { get; init; }
     
     public required string Name { get; init; }
