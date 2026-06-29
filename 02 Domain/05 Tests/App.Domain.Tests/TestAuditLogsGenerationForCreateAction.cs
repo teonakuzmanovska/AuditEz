@@ -13,7 +13,7 @@ public class TestAuditLogsGenerationForCreateAction
     private TestEmployee _secondEmployeeRecord;
     private TestEmployee _thirdEmployeeRecord;
     
-    private TestDepartment _departmentRecord;
+    private TestDepartment _firstDepartmentRecord;
     
     [SetUp]
     public void Setup()
@@ -23,7 +23,7 @@ public class TestAuditLogsGenerationForCreateAction
         
         _firstEmployeeRecord = new TestEmployee()
         {
-            UserId = Guid.NewGuid(),
+            Id = Guid.NewGuid(),
             CreatedOn = DateTime.Now,
             Address = "test",
             Department = Department.Accounting,
@@ -35,40 +35,39 @@ public class TestAuditLogsGenerationForCreateAction
         
         _secondEmployeeRecord = new TestEmployee()
         {
-            UserId = Guid.NewGuid(),
+            Id = Guid.NewGuid(),
             CreatedOn = DateTime.Now,
             Address = "test 1",
             Department = Department.Accounting,
             Name = "Jane",
             Surname = "Doe",
-            Position = "CEO",
+            Position = "VP",
             Salary = 120000
         };
         
         _thirdEmployeeRecord = new TestEmployee()
         {
-            UserId = Guid.NewGuid(),
+            Id = Guid.NewGuid(),
             CreatedOn = DateTime.Now,
             Address = "test 3",
-            Department = Department.Accounting,
+            Department = Department.Marketing,
             Name = "Bob",
             Surname = "Marley",
-            Position = "CEO",
+            Position = "Artist",
             Salary = 120000
         };
 
-        _departmentRecord = new TestDepartment()
+        _firstDepartmentRecord = new TestDepartment()
         {
             Id = Guid.NewGuid(),
             Department = Department.Accounting,
             Employees = [_firstEmployeeRecord, _secondEmployeeRecord, _thirdEmployeeRecord],
             YearsActive = [2021, 2022, 2023]
         };
-        
     }
     
     [Test]
-    public void TestAuditLogsGenerationForCreate()
+    public void TestAuditLogsGenerationForCreate_Employee()
     {
         var auditLogRequest = new CreateAuditLogRequest<TestEmployee>(
             _userId.ToString(), 
@@ -82,18 +81,15 @@ public class TestAuditLogsGenerationForCreateAction
     }
     
     [Test]
-    public void TestAuditLogsGenerationForCreate_With_ListProperties()
+    public void TestAuditLogsGenerationForCreate_Department_With_Employees()
     {
         var auditLogRequest = new CreateAuditLogRequest<TestDepartment>(
             _userId.ToString(), 
             _callingProcess,
-            _departmentRecord);
+            _firstDepartmentRecord);
         
         var auditLogs = AuditLogService.GenerateAuditLogs(auditLogRequest);
         
-        Assert.Pass();
-        
-        //Assert.That(auditLogs.Count(x => x.OldPropertyValue is null), Is.EqualTo(8) );
-        //Assert.That(auditLogs.Count(x => x.NewPropertyValue is not null), Is.EqualTo(8) );
+        Assert.That(auditLogs.Count, Is.EqualTo(27));
     }
 }

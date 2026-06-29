@@ -5,7 +5,7 @@ namespace App.Domain.Tests.Helpers.TestEntities;
 public class TestEmployee
 {
     [EntityIdentifier]
-    public required Guid UserId { get; init; }
+    public required Guid Id { get; set; }
     
     public required  DateTime CreatedOn { get; init; }
     
